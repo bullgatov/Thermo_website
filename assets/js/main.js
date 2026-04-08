@@ -30,6 +30,18 @@
   var zipMsg = document.getElementById("zip-msg");
   var zipModal = document.getElementById("zip-modal");
   var zipModalBody = document.getElementById("zip-modal-body");
+  var supportedZips = {
+    "19087": true,
+    "19312": true,
+    "19333": true,
+    "19301": true,
+    "19355": true,
+    "19341": true,
+    "19380": true,
+    "19425": true,
+    "19460": true,
+    "19406": true,
+  };
 
   function openModal() {
     if (!zipModal) return;
@@ -56,14 +68,17 @@
         zipMsg.textContent = "Please enter a valid 5-digit ZIP code.";
         return;
       }
-      zipMsg.textContent = "Thanks—we will confirm coverage for " + zip + ".";
-      if (zipModalBody) {
-        zipModalBody.textContent =
-          "You entered ZIP " +
+      if (supportedZips[zip]) {
+        zipMsg.textContent =
+          "Great news — we currently service ZIP " +
           zip +
-          ". Replace this modal with your real service-area rules (Chester County towns/ZIPs).";
+          ". You can book online below.";
+      } else {
+        zipMsg.textContent =
+          "ZIP " +
+          zip +
+          " is currently outside our primary service area. Please call (445) 201-1404 to confirm availability.";
       }
-      openModal();
     });
   }
 
