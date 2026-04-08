@@ -651,62 +651,6 @@ a:hover {
   min-height: 1.25em;
 }
 
-/* Resources */
-.resource-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.25rem;
-}
-
-@media (max-width: 800px) {
-  .resource-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-.resource-card {
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  border: 1px solid rgba(26, 43, 74, 0.08);
-  background: var(--color-white);
-}
-
-.resource-card__thumb {
-  height: 140px;
-  background: linear-gradient(120deg, #1a2b4a, #e85d04);
-  opacity: 0.9;
-}
-
-.resource-card__thumb--2 {
-  background: linear-gradient(120deg, #2d3f5e, #f4a261);
-}
-
-.resource-card__thumb--3 {
-  background: linear-gradient(120deg, #e85d04, #1a2b4a);
-}
-
-.resource-card h3,
-.resource-card__meta,
-.resource-card .text-link {
-  padding: 0 1.25rem;
-}
-
-.resource-card h3 {
-  margin: 1rem 0 0.25rem;
-  font-size: 1.05rem;
-}
-
-.resource-card__meta {
-  margin: 0 0 0.75rem;
-  font-size: 0.8rem;
-  color: var(--color-muted);
-}
-
-.resource-card .text-link {
-  display: inline-block;
-  margin-bottom: 1.25rem;
-}
-
 /* FAQ */
 .faq__item {
   border-bottom: 1px solid rgba(26, 43, 74, 0.12);
