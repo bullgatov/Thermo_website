@@ -810,6 +810,17 @@ a:hover {
   color: #b42318;
 }
 
+.form-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  max-width: 42ch;
+}
+
+.form-hint.is-error {
+  color: #b42318;
+}
+
 /* Google Places Autocomplete dropdown above modals */
 .pac-container {
   z-index: 10050 !important;

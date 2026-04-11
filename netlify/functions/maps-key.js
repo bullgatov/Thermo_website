@@ -4,7 +4,10 @@
  */
 
 exports.handler = async function handler() {
-  var key = process.env.GOOGLE_MAPS_API_KEY;
+  var key =
+    typeof process.env.GOOGLE_MAPS_API_KEY === "string"
+      ? process.env.GOOGLE_MAPS_API_KEY.trim()
+      : "";
   if (!key) {
     return {
       statusCode: 503,

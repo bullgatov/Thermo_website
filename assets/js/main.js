@@ -96,12 +96,29 @@
     return "/.netlify/functions/maps-key";
   }
 
+  function setAddressHint(message, isError) {
+    var el = document.getElementById("bf-address-hint");
+    if (!el) return;
+    el.textContent = message || "";
+    if (isError) {
+      el.classList.add("is-error");
+    } else {
+      el.classList.remove("is-error");
+    }
+  }
+
   function loadGoogleMapsScript(apiKey) {
     return new Promise(function (resolve, reject) {
       if (window.google && window.google.maps && window.google.maps.places) {
         resolve();
         return;
       }
+      window.gm_authFailure = function () {
+        setAddressHint(
+          "Address suggestions are unavailable. In Google Cloud: enable Maps JavaScript API and Places API, add this exact website URL under key restrictions (including www if you use it), and ensure billing is active.",
+          true
+        );
+      };
       var cbName = "gmapsPlacesCb_" + String(Math.random()).slice(2);
       window[cbName] = function () {
         resolve();
@@ -115,7 +132,7 @@
       s.src =
         "https://maps.googleapis.com/maps/api/js?key=" +
         encodeURIComponent(apiKey) +
-        "&libraries=places&callback=" +
+        "&v=weekly&libraries=places&callback=" +
         cbName;
       s.async = true;
       s.defer = true;
@@ -165,26 +182,51 @@
 
     fetch(getMapsKeyUrl())
       .then(function (res) {
+        if (!res.ok) {
+          setAddressHint(
+            "Could not load address helper (" + res.status + "). Type the address manually.",
+            true
+          );
+          return null;
+        }
         return res.json();
       })
       .then(function (data) {
-        if (!data || !data.ok || !data.apiKey) return;
+        if (!data) return;
+        if (!data.ok || !data.apiKey) {
+          setAddressHint(
+            "Add GOOGLE_MAPS_API_KEY in Netlify environment variables and redeploy.",
+            true
+          );
+          return;
+        }
         return loadGoogleMapsScript(data.apiKey).then(function () {
-          var ac = new google.maps.places.Autocomplete(addressInput, {
-            componentRestrictions: { country: "us" },
-            fields: ["address_components", "formatted_address"],
-            types: ["address"],
-          });
-          ac.addListener("place_changed", function () {
-            var place = ac.getPlace();
-            if (place && place.address_components) {
-              fillAddressFieldsFromPlace(place);
-            }
-          });
-          addressInput.setAttribute("autocomplete", "off");
+          try {
+            var ac = new google.maps.places.Autocomplete(addressInput, {
+              componentRestrictions: { country: "us" },
+              fields: ["address_components", "formatted_address"],
+            });
+            ac.addListener("place_changed", function () {
+              var place = ac.getPlace();
+              if (place && place.address_components) {
+                fillAddressFieldsFromPlace(place);
+                setAddressHint("", false);
+              }
+            });
+            addressInput.setAttribute("autocomplete", "off");
+            setAddressHint("Pick your address from the suggestions to fill city and ZIP.", false);
+          } catch (err) {
+            console.error("Places Autocomplete:", err);
+            setAddressHint("Could not start address suggestions. Type the address manually.", true);
+          }
         });
       })
-      .catch(function () {});
+      .catch(function () {
+        setAddressHint(
+          "Address helper failed to load. Use HTTPS on your live site or type the address manually.",
+          true
+        );
+      });
   }
 
   initAddressAutocomplete();
