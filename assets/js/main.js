@@ -89,6 +89,106 @@
     return "/.netlify/functions/submit-lead";
   }
 
+  function getMapsKeyUrl() {
+    if (typeof window.MAPS_KEY_URL === "string" && window.MAPS_KEY_URL) {
+      return window.MAPS_KEY_URL;
+    }
+    return "/.netlify/functions/maps-key";
+  }
+
+  function loadGoogleMapsScript(apiKey) {
+    return new Promise(function (resolve, reject) {
+      if (window.google && window.google.maps && window.google.maps.places) {
+        resolve();
+        return;
+      }
+      var cbName = "gmapsPlacesCb_" + String(Math.random()).slice(2);
+      window[cbName] = function () {
+        resolve();
+        try {
+          delete window[cbName];
+        } catch (e) {
+          window[cbName] = undefined;
+        }
+      };
+      var s = document.createElement("script");
+      s.src =
+        "https://maps.googleapis.com/maps/api/js?key=" +
+        encodeURIComponent(apiKey) +
+        "&libraries=places&callback=" +
+        cbName;
+      s.async = true;
+      s.defer = true;
+      s.onerror = function () {
+        reject(new Error("Google Maps script failed to load"));
+      };
+      document.head.appendChild(s);
+    });
+  }
+
+  function fillAddressFieldsFromPlace(place) {
+    var comps = place.address_components;
+    if (!comps || !comps.length) return;
+
+    var streetNum = "";
+    var route = "";
+    var city = "";
+    var state = "";
+    var zip = "";
+
+    for (var i = 0; i < comps.length; i++) {
+      var c = comps[i];
+      var t = c.types;
+      if (t.indexOf("street_number") >= 0) streetNum = c.long_name;
+      if (t.indexOf("route") >= 0) route = c.long_name;
+      if (t.indexOf("locality") >= 0) city = c.long_name;
+      if (t.indexOf("sublocality") >= 0 && !city) city = c.long_name;
+      if (t.indexOf("administrative_area_level_1") >= 0) state = c.short_name;
+      if (t.indexOf("postal_code") >= 0) zip = c.long_name;
+    }
+
+    var line1 = (streetNum + " " + route).trim();
+    var addrEl = document.getElementById("bf-address");
+    var cityEl = document.getElementById("bf-city");
+    var stateEl = document.getElementById("bf-state");
+    var zipEl = document.getElementById("bf-zip");
+
+    if (line1 && addrEl) addrEl.value = line1;
+    if (city && cityEl) cityEl.value = city;
+    if (state && stateEl) stateEl.value = state;
+    if (zip && zipEl) zipEl.value = zip;
+  }
+
+  function initAddressAutocomplete() {
+    var addressInput = document.getElementById("bf-address");
+    if (!addressInput) return;
+
+    fetch(getMapsKeyUrl())
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data || !data.ok || !data.apiKey) return;
+        return loadGoogleMapsScript(data.apiKey).then(function () {
+          var ac = new google.maps.places.Autocomplete(addressInput, {
+            componentRestrictions: { country: "us" },
+            fields: ["address_components", "formatted_address"],
+            types: ["address"],
+          });
+          ac.addListener("place_changed", function () {
+            var place = ac.getPlace();
+            if (place && place.address_components) {
+              fillAddressFieldsFromPlace(place);
+            }
+          });
+          addressInput.setAttribute("autocomplete", "off");
+        });
+      })
+      .catch(function () {});
+  }
+
+  initAddressAutocomplete();
+
   var bookForm = document.getElementById("book-form");
   var bookMsg = document.getElementById("book-msg");
   if (bookForm && bookMsg) {
