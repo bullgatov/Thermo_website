@@ -26,6 +26,13 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Smooth scroll fights mobile browsers + virtual keyboard; dropdowns can pin to the wrong viewport */
+@media (max-width: 900px) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 body {
   margin: 0;
   font-family: var(--font);
@@ -755,6 +762,9 @@ a:hover {
 
 .bf-address-slot {
   min-height: 2.75rem;
+  position: relative;
+  z-index: 40;
+  overflow-anchor: none;
 }
 
 .bf-address-slot gmp-place-autocomplete {
@@ -774,6 +784,13 @@ a:hover {
   outline: 2px solid var(--color-orange);
   outline-offset: 1px;
   border-color: transparent;
+}
+
+/* Prediction panel: keep above modals and limit height on small screens (shadow ::part) */
+.bf-address-slot gmp-place-autocomplete::part(prediction-list) {
+  z-index: 10060;
+  max-height: min(50dvh, 280px);
+  overflow-y: auto;
 }
 
 .req {

@@ -283,6 +283,19 @@
             mount.appendChild(placeAutocomplete);
             bfPlaceAutocomplete = placeAutocomplete;
 
+            (function stabilizeAddressAutocompleteOnMobile() {
+              var root = document.documentElement;
+              function useInstantScroll() {
+                root.style.scrollBehavior = "auto";
+              }
+              function clearScrollOverride() {
+                root.style.scrollBehavior = "";
+              }
+              placeAutocomplete.addEventListener("focusin", useInstantScroll, true);
+              placeAutocomplete.addEventListener("input", useInstantScroll);
+              placeAutocomplete.addEventListener("focusout", clearScrollOverride, true);
+            })();
+
             placeAutocomplete.addEventListener("gmp-select", function (ev) {
               var placePrediction =
                 ev.placePrediction != null
