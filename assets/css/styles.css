@@ -760,6 +760,20 @@ a:hover {
 .bf-address-slot gmp-place-autocomplete {
   display: block;
   width: 100%;
+  /* Widget defaults to color-scheme light+dark → dark OS theme = black field */
+  color-scheme: light;
+  background-color: var(--color-white);
+  color: var(--color-text);
+  border: 1px solid rgba(26, 43, 74, 0.2);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.bf-address-slot gmp-place-autocomplete:focus-within {
+  outline: 2px solid var(--color-orange);
+  outline-offset: 1px;
+  border-color: transparent;
 }
 
 .req {
