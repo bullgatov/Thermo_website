@@ -96,6 +96,8 @@
     return "/.netlify/functions/maps-key";
   }
 
+  var bfPlaceAutocomplete = null;
+
   function setAddressHint(message, isError) {
     var el = document.getElementById("bf-address-hint");
     if (!el) return;
@@ -107,32 +109,70 @@
     }
   }
 
+  function syncAddressFromWidget() {
+    var h = document.getElementById("bf-address");
+    if (!h || !bfPlaceAutocomplete) return;
+    var v =
+      typeof bfPlaceAutocomplete.value === "string"
+        ? bfPlaceAutocomplete.value.trim()
+        : "";
+    if (v) h.value = v;
+  }
+
+  function appendManualAddressFallback() {
+    var mount = document.getElementById("bf-address-slot");
+    var hid = document.getElementById("bf-address");
+    if (!mount || !hid || mount.querySelector(".bf-address-manual")) return;
+    var inp = document.createElement("input");
+    inp.type = "text";
+    inp.className = "bf-address-manual";
+    inp.required = true;
+    inp.setAttribute("autocomplete", "street-address");
+    inp.placeholder = "Street address (include city if no suggestions)";
+    inp.addEventListener("input", function () {
+      hid.value = inp.value;
+    });
+    mount.appendChild(inp);
+  }
+
   function loadGoogleMapsScript(apiKey) {
     return new Promise(function (resolve, reject) {
-      if (window.google && window.google.maps && window.google.maps.places) {
-        resolve();
+      function afterApiLoaded() {
+        if (typeof google.maps.importLibrary === "function") {
+          return google.maps.importLibrary("places");
+        }
+        return Promise.resolve();
+      }
+      if (window.google && window.google.maps) {
+        afterApiLoaded().then(function () {
+          resolve();
+        }).catch(reject);
         return;
       }
       window.gm_authFailure = function () {
         setAddressHint(
-          "Address suggestions are unavailable. In Google Cloud: enable Maps JavaScript API and Places API, add this exact website URL under key restrictions (including www if you use it), and ensure billing is active.",
+          "Address suggestions are unavailable. In Google Cloud: enable Maps JavaScript API and Places API (New), allow those APIs on this key, add your site under HTTP referrer restrictions (with and without www if you use both), and ensure billing is active.",
           true
         );
       };
       var cbName = "gmapsPlacesCb_" + String(Math.random()).slice(2);
       window[cbName] = function () {
-        resolve();
-        try {
-          delete window[cbName];
-        } catch (e) {
-          window[cbName] = undefined;
-        }
+        afterApiLoaded()
+          .then(function () {
+            resolve();
+            try {
+              delete window[cbName];
+            } catch (e) {
+              window[cbName] = undefined;
+            }
+          })
+          .catch(reject);
       };
       var s = document.createElement("script");
       s.src =
         "https://maps.googleapis.com/maps/api/js?key=" +
         encodeURIComponent(apiKey) +
-        "&v=weekly&libraries=places&callback=" +
+        "&v=weekly&libraries=places&loading=async&callback=" +
         cbName;
       s.async = true;
       s.defer = true;
@@ -143,8 +183,19 @@
     });
   }
 
-  function fillAddressFieldsFromPlace(place) {
-    var comps = place.address_components;
+  function componentLongText(c) {
+    if (c.longText != null) return c.longText;
+    if (c.long_name != null) return c.long_name;
+    return "";
+  }
+
+  function componentShortText(c) {
+    if (c.shortText != null) return c.shortText;
+    if (c.short_name != null) return c.short_name;
+    return "";
+  }
+
+  function fillAddressFieldsFromComponents(comps) {
     if (!comps || !comps.length) return;
 
     var streetNum = "";
@@ -155,36 +206,45 @@
 
     for (var i = 0; i < comps.length; i++) {
       var c = comps[i];
-      var t = c.types;
-      if (t.indexOf("street_number") >= 0) streetNum = c.long_name;
-      if (t.indexOf("route") >= 0) route = c.long_name;
-      if (t.indexOf("locality") >= 0) city = c.long_name;
-      if (t.indexOf("sublocality") >= 0 && !city) city = c.long_name;
-      if (t.indexOf("administrative_area_level_1") >= 0) state = c.short_name;
-      if (t.indexOf("postal_code") >= 0) zip = c.long_name;
+      var t = c.types || [];
+      if (t.indexOf("street_number") >= 0) streetNum = componentLongText(c);
+      if (t.indexOf("route") >= 0) route = componentLongText(c);
+      if (t.indexOf("locality") >= 0) city = componentLongText(c);
+      if (t.indexOf("sublocality") >= 0 && !city) city = componentLongText(c);
+      if (t.indexOf("administrative_area_level_1") >= 0) {
+        state = componentShortText(c);
+      }
+      if (t.indexOf("postal_code") >= 0) zip = componentLongText(c);
     }
 
     var line1 = (streetNum + " " + route).trim();
-    var addrEl = document.getElementById("bf-address");
+    var addrHidden = document.getElementById("bf-address");
     var cityEl = document.getElementById("bf-city");
     var stateEl = document.getElementById("bf-state");
     var zipEl = document.getElementById("bf-zip");
 
-    if (line1 && addrEl) addrEl.value = line1;
+    if (line1 && addrHidden) addrHidden.value = line1;
     if (city && cityEl) cityEl.value = city;
     if (state && stateEl) stateEl.value = state;
     if (zip && zipEl) zipEl.value = zip;
   }
 
+  function fillAddressFieldsFromPlace(place) {
+    var comps = place.addressComponents || place.address_components;
+    fillAddressFieldsFromComponents(comps);
+  }
+
   function initAddressAutocomplete() {
-    var addressInput = document.getElementById("bf-address");
-    if (!addressInput) return;
+    var mount = document.getElementById("bf-address-slot");
+    var addrHidden = document.getElementById("bf-address");
+    if (!mount || !addrHidden) return;
 
     fetch(getMapsKeyUrl())
       .then(function (res) {
         if (!res.ok) {
+          appendManualAddressFallback();
           setAddressHint(
-            "Could not load address helper (" + res.status + "). Type the address manually.",
+            "Could not load address helper (" + res.status + "). Enter your address manually.",
             true
           );
           return null;
@@ -194,6 +254,7 @@
       .then(function (data) {
         if (!data) return;
         if (!data.ok || !data.apiKey) {
+          appendManualAddressFallback();
           setAddressHint(
             "Add GOOGLE_MAPS_API_KEY in Netlify environment variables and redeploy.",
             true
@@ -202,28 +263,65 @@
         }
         return loadGoogleMapsScript(data.apiKey).then(function () {
           try {
-            var ac = new google.maps.places.Autocomplete(addressInput, {
-              componentRestrictions: { country: "us" },
-              fields: ["address_components", "formatted_address"],
+            var PlaceAutocompleteElement =
+              google.maps.places.PlaceAutocompleteElement;
+            if (!PlaceAutocompleteElement) {
+              appendManualAddressFallback();
+              setAddressHint(
+                "This browser cannot load address suggestions. Enter your address manually.",
+                true
+              );
+              return;
+            }
+            mount.innerHTML = "";
+            bfPlaceAutocomplete = null;
+
+            var placeAutocomplete = new PlaceAutocompleteElement({});
+            placeAutocomplete.includedRegionCodes = ["us"];
+            placeAutocomplete.placeholder =
+              "Start typing your street address";
+            mount.appendChild(placeAutocomplete);
+            bfPlaceAutocomplete = placeAutocomplete;
+
+            placeAutocomplete.addEventListener("gmp-select", function (ev) {
+              var placePrediction =
+                ev.placePrediction != null
+                  ? ev.placePrediction
+                  : ev.detail && ev.detail.placePrediction;
+              if (!placePrediction) return;
+              var place = placePrediction.toPlace();
+              place
+                .fetchFields({ fields: ["addressComponents"] })
+                .then(function () {
+                  fillAddressFieldsFromPlace(place);
+                  setAddressHint("", false);
+                })
+                .catch(function (err) {
+                  console.error("Places fetchFields:", err);
+                  syncAddressFromWidget();
+                });
             });
-            ac.addListener("place_changed", function () {
-              var place = ac.getPlace();
-              if (place && place.address_components) {
-                fillAddressFieldsFromPlace(place);
-                setAddressHint("", false);
-              }
-            });
-            addressInput.setAttribute("autocomplete", "off");
-            setAddressHint("Pick your address from the suggestions to fill city and ZIP.", false);
+
+            setAddressHint(
+              "Pick your address from the suggestions to fill city and ZIP.",
+              false
+            );
           } catch (err) {
-            console.error("Places Autocomplete:", err);
-            setAddressHint("Could not start address suggestions. Type the address manually.", true);
+            console.error("PlaceAutocompleteElement:", err);
+            mount.innerHTML = "";
+            bfPlaceAutocomplete = null;
+            appendManualAddressFallback();
+            setAddressHint(
+              "Could not start address suggestions. Enter your address manually.",
+              true
+            );
           }
         });
       })
       .catch(function () {
+        appendManualAddressFallback();
         setAddressHint(
-          "Address helper failed to load. Use HTTPS on your live site or type the address manually.",
+          "Address helper failed to load. Use HTTPS on your live site or enter the address manually.",
           true
         );
       });
@@ -236,6 +334,15 @@
   if (bookForm && bookMsg) {
     bookForm.addEventListener("submit", function (e) {
       e.preventDefault();
+      syncAddressFromWidget();
+      var addrHidden = document.getElementById("bf-address");
+      if (!addrHidden || !String(addrHidden.value || "").trim()) {
+        setAddressHint(
+          "Please enter your street address. Choosing a suggestion fills city and ZIP automatically.",
+          true
+        );
+        return;
+      }
       if (!bookForm.reportValidity()) return;
 
       var submitBtn = bookForm.querySelector('button[type="submit"]');

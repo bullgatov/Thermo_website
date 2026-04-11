@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to main content</a>
@@ -269,8 +270,11 @@
               </div>
             </div>
             <div class="form-row">
-              <label for="bf-address">Street address <span class="req">*</span></label>
-              <input id="bf-address" name="address" type="text" required autocomplete="street-address" placeholder="Start typing your street address" />
+              <label class="book-form__label-block">
+                <span class="book-form__label-text">Street address <span class="req">*</span></span>
+                <div id="bf-address-slot" class="bf-address-slot"></div>
+              </label>
+              <input type="hidden" id="bf-address" name="address" value="" />
               <p class="form-hint" id="bf-address-hint" role="status" aria-live="polite"></p>
             </div>
             <div class="form-row form-row--third">

@@ -2,5 +2,10 @@
   publish = "."
   functions = "netlify/functions"
 
+[[redirects]]
+  from = "/favicon.ico"
+  to = "/favicon.svg"
+  status = 200
+
 [functions]
   node_bundler = "esbuild"
