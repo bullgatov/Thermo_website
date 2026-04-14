@@ -319,16 +319,7 @@ a:hover {
 }
 
 .hero__grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3rem;
-  align-items: center;
-}
-
-@media (max-width: 900px) {
-  .hero__grid {
-    grid-template-columns: 1fr;
-  }
+  display: block;
 }
 
 .eyebrow {
@@ -365,69 +356,6 @@ a:hover {
   font-size: 0.875rem;
   color: rgba(255, 255, 255, 0.55);
   margin: 0;
-}
-
-.hero__visual {
-  display: flex;
-  justify-content: center;
-}
-
-.hero-card {
-  width: 100%;
-  max-width: 420px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow);
-}
-
-.hero-card__img {
-  aspect-ratio: 4 / 3;
-  background:
-    linear-gradient(160deg, rgba(232, 93, 4, 0.2) 0%, transparent 50%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%231a2b4a' width='100' height='100'/%3E%3Cpath fill='%232d3f5e' d='M0 60 L100 40 L100 100 L0 100 Z'/%3E%3C/svg%3E");
-  background-size: cover;
-}
-
-/* Strip */
-.strip {
-  background: var(--color-white);
-  margin-top: -1.5rem;
-  position: relative;
-  z-index: 2;
-}
-
-.strip__inner {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  background: var(--color-white);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
-  padding: 1.25rem 1.5rem;
-}
-
-@media (max-width: 700px) {
-  .strip__inner {
-    grid-template-columns: 1fr;
-  }
-}
-
-.strip__item {
-  padding: 0.5rem 0.75rem;
-  border-left: 3px solid var(--color-orange);
-}
-
-.strip__item strong {
-  display: block;
-  font-size: 0.95rem;
-  margin-bottom: 0.2rem;
-}
-
-.strip__item span {
-  font-size: 0.85rem;
-  color: var(--color-muted);
 }
 
 /* Sections */
