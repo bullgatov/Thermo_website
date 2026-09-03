@@ -3,6 +3,8 @@
  * Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in Netlify -> Site settings -> Environment variables.
  */
 
+const { formatServiceRequest } = require("./lib/service-request-message");
+
 const MAX_ISSUE_LEN = 3500;
 
 function jsonResponse(statusCode, body, extraHeaders) {
@@ -72,27 +74,20 @@ exports.handler = async function handler(event) {
     issue = issue.slice(0, MAX_ISSUE_LEN) + "\u2026";
   }
 
-  const lines = [
-    "New service request - Thermo Appliance Repair",
-    "",
-    "Name: " + name,
-    "Phone: " + phone,
-    "Email: " + (email || "-"),
-    "",
-    "Address: " + address,
-    "City: " + city + ", " + state + " " + zip,
-    "",
-    "Appliance: " + appliance,
-    "Brand / model: " + (brandModel || "-"),
-    "",
-    "Issue:",
-    issue,
-    "",
-    "Preferred date: " + (preferredDate || "-"),
-    "Preferred window: " + (windowPref || "Any"),
-  ];
-
-  const text = lines.join("\n");
+  const text = formatServiceRequest({
+    name: name,
+    phone: phone,
+    email: email,
+    address: address,
+    city: city,
+    state: state,
+    zip: zip,
+    appliance: appliance,
+    brand_model: brandModel,
+    issue: issue,
+    preferred_date: preferredDate,
+    window: windowPref,
+  });
 
   let tgRes;
   try {
