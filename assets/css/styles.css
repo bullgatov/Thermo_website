@@ -816,6 +816,19 @@ a:hover {
   box-shadow: var(--shadow);
 }
 
+.modal__service-area {
+  margin: 0 0 1.25rem;
+  padding-left: 1.25rem;
+  max-height: min(50vh, 320px);
+  overflow-y: auto;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.modal__service-area li {
+  margin-bottom: 0.25rem;
+}
+
 .modal__panel h2 {
   margin-top: 0;
 }

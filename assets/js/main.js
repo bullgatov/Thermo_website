@@ -31,16 +31,25 @@
   var zipModal = document.getElementById("zip-modal");
   var zipModalBody = document.getElementById("zip-modal-body");
   var supportedZips = {
+    "19003": true,
+    "19010": true,
+    "19085": true,
     "19087": true,
+    "19301": true,
     "19312": true,
     "19333": true,
-    "19301": true,
-    "19355": true,
     "19341": true,
+    "19355": true,
     "19380": true,
-    "19425": true,
-    "19460": true,
+    "19403": true,
     "19406": true,
+    "19425": true,
+    "19426": true,
+    "19460": true,
+    "19464": true,
+    "19465": true,
+    "19468": true,
+    "19475": true,
   };
 
   function openModal() {
