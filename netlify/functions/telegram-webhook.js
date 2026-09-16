@@ -25,8 +25,26 @@ function jsonResponse(statusCode, body) {
   };
 }
 
-function chatIdMatches(configured, incoming) {
-  return String(configured).trim() === String(incoming).trim();
+function headerValue(headers, name) {
+  if (!headers) return "";
+  var want = name.toLowerCase();
+  var keys = Object.keys(headers);
+  for (var i = 0; i < keys.length; i++) {
+    if (keys[i].toLowerCase() === want) {
+      return headers[keys[i]] || "";
+    }
+  }
+  return "";
+}
+
+function chatIdMatches(configured, chat) {
+  var conf = String(configured || "").trim();
+  if (!conf || !chat) return false;
+  if (conf === String(chat.id)) return true;
+  var username = chat.username ? String(chat.username).trim() : "";
+  if (!username) return false;
+  var confName = conf.charAt(0) === "@" ? conf.slice(1) : conf;
+  return confName.toLowerCase() === username.toLowerCase();
 }
 
 async function sendTelegramMessage(token, payload) {
@@ -60,11 +78,9 @@ exports.handler = async function handler(event) {
   }
 
   if (webhookSecret) {
-    const headerSecret =
-      (event.headers && (event.headers["x-telegram-bot-api-secret-token"] ||
-        event.headers["X-Telegram-Bot-Api-Secret-Token"])) ||
-      "";
+    const headerSecret = headerValue(event.headers, "x-telegram-bot-api-secret-token");
     if (headerSecret !== webhookSecret) {
+      console.error("Telegram webhook secret mismatch or missing header");
       return jsonResponse(401, { ok: false, error: "Unauthorized" });
     }
   }
@@ -81,16 +97,18 @@ exports.handler = async function handler(event) {
     return jsonResponse(200, { ok: true, ignored: "no_message" });
   }
 
-  if (!chatIdMatches(chatId, message.chat.id)) {
+  const replyTo = message.reply_to_message;
+  const rawText = typeof message.text === "string" ? message.text : "";
+  const looksLikeRequest = !!(replyTo && parseServiceRequest(replyTo.text || ""));
+
+  if (!chatIdMatches(chatId, message.chat) && !looksLikeRequest) {
+    console.error("chat_mismatch incoming=", message.chat && message.chat.id, "configured=", chatId);
     return jsonResponse(200, { ok: true, ignored: "chat_mismatch" });
   }
 
-  const replyTo = message.reply_to_message;
-  const rawText = typeof message.text === "string" ? message.text : "";
-
   if (!replyTo || typeof replyTo.text !== "string") {
-    const trimmed = rawText.trim();
-    if (trimmed === "/help" || trimmed === "/start") {
+    const command = normalizeCommand(rawText);
+    if (command === "help" || command === "start" || command === "commands") {
       await sendTelegramMessage(token, {
         chat_id: message.chat.id,
         text: COMMAND_HELP,

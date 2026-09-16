@@ -120,10 +120,40 @@ function formatWindowHours(value) {
   }
 }
 
+function formatPreferredDate(value) {
+  if (emptyValue(value)) {
+    return null;
+  }
+  var match = String(value).trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) {
+    return value;
+  }
+  var months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+  var monthIndex = parseInt(match[2], 10) - 1;
+  var day = parseInt(match[3], 10);
+  if (monthIndex < 0 || monthIndex > 11 || day < 1 || day > 31) {
+    return value;
+  }
+  return months[monthIndex] + " " + day;
+}
+
 function buildHelloMessage(parsed) {
   var name = displayValue(parsed.name, "there");
   var appliance = displayValue(parsed.appliance, "appliance");
-  var date = displayValue(parsed.preferredDate, "your preferred date");
+  var date = formatPreferredDate(parsed.preferredDate) || "your preferred date";
   var windowPref = formatWindowHours(parsed.preferredWindow) || "your preferred window";
 
   return (
