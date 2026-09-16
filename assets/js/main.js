@@ -98,6 +98,34 @@
     return "/.netlify/functions/submit-lead";
   }
 
+  function normalizeUsPhoneDigits(phone) {
+    var d = String(phone || "").replace(/\D/g, "");
+    if (d.length === 11 && d.charAt(0) === "1") {
+      return d.slice(1);
+    }
+    return d;
+  }
+
+  function isValidUsPhone(phone) {
+    var d = normalizeUsPhoneDigits(phone);
+    return /^[2-9]\d{2}[2-9]\d{6}$/.test(d);
+  }
+
+  function formatUsPhone(phone) {
+    var d = normalizeUsPhoneDigits(phone);
+    if (d.length !== 10) {
+      return String(phone || "").trim();
+    }
+    return (
+      "(" +
+      d.slice(0, 3) +
+      ") " +
+      d.slice(3, 6) +
+      "-" +
+      d.slice(6)
+    );
+  }
+
   function getMapsKeyUrl() {
     if (typeof window.MAPS_KEY_URL === "string" && window.MAPS_KEY_URL) {
       return window.MAPS_KEY_URL;
@@ -351,6 +379,15 @@
 
   initAddressAutocomplete();
 
+  var phoneInput = document.getElementById("bf-phone");
+  if (phoneInput) {
+    phoneInput.addEventListener("input", function () {
+      if (isValidUsPhone(phoneInput.value)) {
+        phoneInput.setCustomValidity("");
+      }
+    });
+  }
+
   var bookForm = document.getElementById("book-form");
   var bookMsg = document.getElementById("book-msg");
   if (bookForm && bookMsg) {
@@ -365,6 +402,15 @@
         );
         return;
       }
+      if (phoneInput) {
+        if (!isValidUsPhone(phoneInput.value)) {
+          phoneInput.setCustomValidity(
+            "Enter a valid 10-digit US phone number (e.g. 445-201-1404)."
+          );
+        } else {
+          phoneInput.setCustomValidity("");
+        }
+      }
       if (!bookForm.reportValidity()) return;
 
       var submitBtn = bookForm.querySelector('button[type="submit"]');
@@ -376,7 +422,7 @@
 
       var payload = {
         name: (document.getElementById("bf-name") || {}).value,
-        phone: (document.getElementById("bf-phone") || {}).value,
+        phone: formatUsPhone((document.getElementById("bf-phone") || {}).value),
         email: (document.getElementById("bf-email") || {}).value,
         address: (document.getElementById("bf-address") || {}).value,
         city: (document.getElementById("bf-city") || {}).value,

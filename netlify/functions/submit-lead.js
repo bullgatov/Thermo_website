@@ -4,6 +4,7 @@
  */
 
 const { formatServiceRequest } = require("./lib/service-request-message");
+const { isValidUsPhone, formatUsPhone } = require("./lib/us-phone");
 
 const MAX_ISSUE_LEN = 3500;
 
@@ -70,13 +71,22 @@ exports.handler = async function handler(event) {
     return jsonResponse(400, { ok: false, error: "Invalid ZIP code" });
   }
 
+  if (!isValidUsPhone(phone)) {
+    return jsonResponse(400, {
+      ok: false,
+      error: "Enter a valid 10-digit US phone number.",
+    });
+  }
+
+  const phoneFormatted = formatUsPhone(phone);
+
   if (issue.length > MAX_ISSUE_LEN) {
     issue = issue.slice(0, MAX_ISSUE_LEN) + "\u2026";
   }
 
   const text = formatServiceRequest({
     name: name,
-    phone: phone,
+    phone: phoneFormatted,
     email: email,
     address: address,
     city: city,
